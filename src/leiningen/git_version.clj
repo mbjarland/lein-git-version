@@ -51,7 +51,8 @@
         matcher (re-matcher pattern out)]
     (if-not (.matches matcher)
       (do (binding [*out* *err*]
-            (printf "Warning: lein-git-version didn't match the current repo status:\n%s\n\nAgainst pattern:\n%s\n"
+            (printf (str "Warning: lein-git-version didn't match the current repo status:\n%s\n\n"
+                         "Against pattern:\n%s\n\n")
                     (pr-str out) pattern)
             (.flush *out*))
           {})
@@ -69,7 +70,7 @@
   (let [{:keys [exit out] :as child} (apply sh [git "describe" "--tags" "--dirty" "--long"])]
     (if-not (= exit 0)
       (binding [*out* *err*]
-        (printf "Warning: lein-git-version git exited %d\n%s\n"
+        (printf "Warning: lein-git-version git exited %d\n%s\n\n"
                 exit child)
         (.flush *out*)
         {})
