@@ -9,6 +9,8 @@ which is itself an un-maintained alternative to
 [michalmarczyk's](https://github.com/michalmarczyk/lein-git-version)
 original project.
 
+## Motivation
+
 Leiningen projects, in their heritage from Maven, list an explicit
 version as the 3rd element of a `project.clj` file. For instance
 
