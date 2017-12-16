@@ -31,8 +31,7 @@
 (defn git-status
   "Fetch the current git status."
   [{:keys [git] :as config}]
-  (let [buff                       (:out (apply sh [git "describe" "--tags" "--dirty" "--long"]))
-        _                          (println "debug]" (pr-str buff))
+  (let [buff                       (:out (apply sh [git "describe" "--tags" "--dirty" "--long"])) 
         [_ tag ahead ref dirty? _] (or (re-find git-dirty-pattern buff)
                                        [nil nil nil true])
         dirty?                     (not= "" dirty?)]
