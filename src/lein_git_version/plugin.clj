@@ -11,10 +11,10 @@
   [{:keys           [git-version name root]
     project-version :version
     :as             project}]
-  (let [{:keys [path root-ns set-version status-to-version] :as config} (merge default-config git-version)        
+  (let [{:keys [path root-ns set-version status-to-version] :as config} (merge default-config git-version)
         {:keys [tag version ahead ahead? ref ref-short] :as status}     (git-status config)
         status                                                          (dissoc status :version)
-        
+
         status-to-version (when status-to-version
                             (try (eval status-to-version)
                                  (catch Exception e
