@@ -1,90 +1,105 @@
 # lein-git-version
 
-I'm a big fan of DRY.  I already have version information in git for
-my projects.  Remembering to maintain that information in my
-project.clj is a PITA.  So... Here's a Leiningen plugin to obtain a
-version identifier from git, using:
+[![Clojars Project](https://img.shields.io/clojars/v/me.arrdem/lein-git-version.svg)](https://clojars.org/me.arrdem/lein-git-version)
 
-    git describe --match 'v*.*' --abbrev=4 --dirty=**DIRTY**
+This repo is a fork and to my taste a massive cleanup of
+[cvillecsteele's
+lein-git-version](https://github.com/cvillecsteele/lein-git-version)
+which is itself an un-maintained alternative to
+[michalmarczyk's](https://github.com/michalmarczyk/lein-git-version)
+original project.
 
-It uses annotated git tags (those set with `git tag -a`) as the
-authoritative source of version information for your project.
+Leiningen projects, in their heritage from Maven, list an explicit
+version as the 3rd element of a `project.clj` file. For instance
 
-It then substitutes that version into the project on the fly, so every
-lein task that uses the project version sees the one obtained from
-git.
+    (defproject foo "some-version" ...)
 
-In addition, it injects a file into
-`project`/src/`project`/version.clj, containing a def for the version.
+There are a couple problems with this.  First of all, until the
+arrival of `leiningen.release/bump-version` for the `lein release`
+task, there was really no sane way to update the version of a property
+short of a sed script which just rewrote the `project.clj`.
 
-## Installation
+While `bump-version` is a mostly acceptable solution, it still relies
+on the filesystem (or to be more specific a code repository)
+reflecting in a file under version control the logical identifier
+attached to some point in the history of the repository.
 
-Add: 
+The problem with sticking a version identifier in the filesystem is
+that it becomes a source of merge conflicts when multiple people are
+collaborating on an artifact, it becomes a source of tooling
+difficulty with requiring merge hooks or workflows with automated
+commits that can be difficult to implement.
 
-    ;; If :git-version isn't present in map, lein git-version does nothing
-    :git-version {}
-
-    ;; Add in the git-version plugin
-    :profiles {:dev {:plugins [[org.clojars.cvillecsteele/lein-git-version "1.2.5"]]}}
-
-to your `project.clj`.  However if you want to build jars, etc, using
-the git-ified version, bear in mind that profile (`:dev` in the case
-above) must be activated.
+Moreover, in monorepo patterns ala
+[lein-modules](https://github.com/jcrossley3/lein-modules), versions
+for shared libraries which are distributed only as a component of
+artifacts in the repository are no longer particularly a meaningful
+construct. The commit ID or the version control label is the most
+meaningful identifier.
 
 ## Usage
 
-The version string set in your project.clj will be ignored, and all
-lein tasks relying on it will instead see the git-ified version.
+Add: 
 
-For example, with a project.clj that looks like this:
+    ;; Add in the git-version plugin
+    :plugins [[me.arrdem/lein-git-version "0.1.0-SNAPSHOT"]]
 
-    (defproject nifty "bLAH BLaH"
-      :description "Do nifty things"
-      :git-version {}
-      :profiles {:dev {:plugins [[org.clojars.cvillecsteele/lein-git-version "1.2.5"]]}}
+By default, my incarnation of lein-git-version doesn't do anything to
+your project, except make some additional keys visible in the project
+map.
+
+    {:tag       ;; Name of the last git tag if any
+	 :ahead     ;; Number of commits ahead of the last tag, or 0
+	 :ahead?    ;; Is the head ahead by more than 0 commits
+	 :ref       ;; The full current ref
+	 :ref-short ;; The "short" current ref
+	 :dirty?    ;; Optional. Boolean. Are there un-committed changes.
+	 :message   ;; Optional. The last commit message when clean.
+	 :timestamp ;; Optional. The last commit date when clean.
+	}
+
+If the keyword `:project/ref` or `:project/ref-short` is used in place
+of a version string, lein-git-version will update the version string
+of the project to instead reflect the ref or short ref.
+
+For instance,
+
+    (defproject bar :project/ref
+	  ...)
+	  
+or
+
+	(defproject baz :project/ref-short
+	  ...)
+
+lein-git-version can also be used to compute a versions string, as an
+arbitrary function of the current git status by specifying a
+`status-to-version` function of the above status structure in the
+`:git-version` map of your `project.clj`.
+
+For instance,
+
+    (defproject quxx "this will be replaced"
+      :git-version {:stats-to-version 
+	    (fn [{:keys [tag ahead ahead? dirty?]}]
+		  (str tag
+		       (when ahead (str "+" ahead))
+			   (when (or ahead? dirty?) "-SNAPSHOT")))
+	  }
+      :plugins [[me.arrdem/lein-git-version "0.1.0-SNAPSHOT"]]}}
       ...)
+	  
+will compute a version string containing the last tag, the number of
+commits ahead and the "-SNAPSHOT" suffix if the repo is dirty or it's
+ahead.
 
-You can do this:      
-
-    $ git tag -a -m "First version!" v1.0.0
-    $ lein git-version
-    1.0.0
-    $ lein jar
-    Created /Users/colinsteele/Projects/nifty/target/nifty-1.0.0.jar
-    $ cat src/nifty/version.clj
-    ;; Do not edit.  Generated by lein-git-version plugin.
-    (ns nifty.version)
-    (def timestamp 1479069352)
-    (def version "1.0.0")
-    (def gitref "04fc892e0cf9c8e993a5876c43f51988a653da38")
-    (def gitmsg "commit 04fc892e0cf9c8e993a5876c43f51988a653da38
-    Author: Colin Steele <cvillecsteele@gmail.com>
-    Date:   Sun Nov 13 15:35:52 2016 -0500
-
-        First version!")
-
-## Customization
-
-The `:git-version` map can have several entries:
-
-    :git-version {:root-ns "my-namespace"
-                  ;; If :path is relative it's considered relative to the root path of the lein project.
-                  :path "some/other/place"
-                  :version-cmd "git describe --match v*.* --abbrev=4 --dirty=**DIRTY**"
-                  :ref-cmd "git rev-parse --verify HEAD"
-                  :msg-cmd "git log -1 HEAD"
-                  :ts-cmd "git log -1 --pretty=%ct"
-                  :assoc-in-keys [[:version]]
-                  :filename "version.clj"
-                  :tag-to-version #(apply str (rest %))}
-
-Each can be changed to customize what the plugin saves into
-`version.clj` and/or how it alters the project map. The `-cmd` entries
-are split on the space character, so don't have any extraneous ones
-lying around.
+This enables your release workflow to consist simply of creating a tag
+and doing a deploy. No source changes are required.
 
 ## License
 
-Copyright © 2016 Colin Steele
+Copyright © 2017 Reid McKenzie
+
+Derived from lein-git-version © 2016 Colin Steele
 
 Distributed under the Eclipse Public License, the same as Clojure.
