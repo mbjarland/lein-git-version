@@ -6,11 +6,6 @@
 (def git-describe-pattern
   #"(?<tag>.*)-(?<ahead>\d+)-g(?<ref>[0-9a-f]*)(?<dirty>(-dirty)?)")
 
-(def default-config
-  {:git              "git"
-   :describe-pattern git-describe-pattern
-   :tag-to-version   nil})
-
 (defn git-ref
   "Fetches the git ref of `ref`, being a tag or ref name using the configured `git`."
   [{:keys [git] :as config} ref]

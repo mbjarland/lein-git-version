@@ -79,7 +79,8 @@ arbitrary function of the current git status by specifying a
 `status-to-version` function of the above status structure in the
 `:git-version` map of your `project.clj`.
 
-For instance, lein-git-version an earlier version of itself uses itself to compute its own version.
+For instance, lein-git-version an earlier version of itself uses
+itself to compute its own version.
 
     (defproject me.arrdem/lein-git-version "_"
       :git-version {:status-to-version
@@ -99,6 +100,28 @@ ahead.
 
 This enables your release workflow to consist simply of creating a tag
 and doing a deploy. No source changes are required.
+
+Like its predecessors, lein-git-version can be used to generate a
+version file. Previous incarnations tried to lay down a version
+namespace. This incarnation can be configured to lay down an EDN file
+containing git information at a specified location relative to the
+root of the project.
+
+For instance,
+
+    (defproject com.my-app/cares-what-version-it-is :project/ref-short
+       ...
+       :git-version {:version-file "resources/com/my_app/version.edn"
+                     :version-file-keys [:ref :version :timestamp]}))
+
+will cause lein-git-version to make the specified directory, and lay
+down an EDN file containing all the selected project status
+information from the project map.
+
+It's suggested that rather than target a directory under source
+control, a source control ignored eg `"gen-resources/..."` directory
+be used to isolate generated build artifacts from user
+sources. Remember to add the target to your project's `:resource-paths`!
 
 ## License
 

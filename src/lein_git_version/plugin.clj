@@ -1,6 +1,27 @@
 (ns lein-git-version.plugin
   "The lein-git-version plugin as loaded by lein itself."
-  (:require [leiningen.git-version :refer [default-config git-status]]))
+  (:require [clojure.java.io :as io]
+            [leiningen.git-version :refer [git-status git-describe-pattern]]))
+
+(def default-config
+  "The default configuration values."
+  {:git               "git"
+   :describe-pattern  git-describe-pattern
+   :tag-to-version    nil
+   :version-file      nil
+   :version-file-keys [:ref :ref-short :tag :ahead :ahead? :dirty? :message :timestamp :version]})
+
+(defn write-version-file
+  "Write a project \"version\" file."
+  [{:keys [root] :as project} file keys]
+  (let [f (io/file root file)]
+    (io/make-parents f)
+    (with-open [writer (io/writer f)]
+      (binding [*out* writer]
+        (prn (select-keys project)))))
+
+  ;; Don't transform the project so as to fit in the cond-> pipeline
+  project)
 
 (defn middleware
   "Leiningen middleware.
@@ -22,7 +43,7 @@
   [{:keys           [git-version name root]
     project-version :version
     :as             project}]
-  (let [{:keys [path root-ns set-version status-to-version] :as config}
+  (let [{:keys [version-file file-keys status-to-version] :as config}
         ,,(merge default-config git-version)
 
         {:keys [tag version ahead ahead? ref ref-short] :as status}
@@ -41,13 +62,14 @@
                              status-to-version e))
                    (System/exit 1))))]
     (cond-> (merge project status)
-      (or (= set-version :git-ref-short)
-          (= project-version :project/git-ref-short))
-      (assoc :version ref-short)
+      (= project-version :project/git-ref-short)
+      ,,(assoc :version ref-short)
 
-      (or (= set-version :git-ref)
-          (= project-version :project/git-ref))
-      (assoc :version ref)
+      (= project-version :project/git-ref)
+      ,,(assoc :version ref)
 
       status-to-version
-      (assoc :version (status-to-version status)))))
+      ,,(assoc :version (status-to-version status))
+
+      version-file
+      ,,(write-version-file version-file file-keys))))
