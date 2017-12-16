@@ -5,7 +5,7 @@
 
 (def default-config
   {:git            "git"
-   :tag-to-version identity})
+   :tag-to-version nil})
 
 (def git-dirty-pattern
   #"(?<tag>.*)-(?<ahead>\d+)-g(?<ref>[0-9a-f]*)(?<snapshot>(-dirty)?)")
@@ -30,19 +30,17 @@
 
 (defn git-status
   "Fetch the current git status."
-  [{:keys [tag-to-version git] :as config}]
+  [{:keys [git] :as config}]
   (let [buff                       (:out (apply sh [git "describe" "--tags" "--dirty" "--long"]))
         _                          (println "debug]" (pr-str buff))
-        [_ tag ahead ref dirty? _] (re-find git-dirty-pattern buff)
+        [_ tag ahead ref dirty? _] (or (re-find git-dirty-pattern buff)
+                                       [nil nil nil true])
         dirty?                     (not= "" dirty?)]
-    (cond-> {:type      ::status
-             :tag       tag
-             :version   (tag-to-version tag)
+    (cond-> {:tag       tag
              :ahead     (Integer/parseInt ahead)
              :ahead?    (not= ahead "0")
              :ref       (get-git-ref config)
              :ref-short ref}
       dirty?       (assoc :dirty? true)
       (not dirty?) (assoc :message (git-ref-message config "HEAD"))
-      (not dirty?) (assoc :timestamp (git-ref-ts config)))))
-
+      (not dirty?) (assoc :timestamp (git-ref-ts config "HEAD")))))
