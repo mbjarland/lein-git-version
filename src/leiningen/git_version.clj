@@ -1,5 +1,5 @@
 (ns leiningen.git-version
-  ""
+  "A quick and dirty wrapper around git for fetching ref and status information."
   (:require [clojure.string :as str]
             [clojure.java.shell :refer [sh]]))
 
@@ -11,28 +11,28 @@
    :describe-pattern git-describe-pattern
    :tag-to-version   nil})
 
-(defn get-git-ref
-  ""
-  [{:keys [git] :as config}]
-  (let [cmd [git "rev-parse" "--verify" "HEAD"]]
+(defn git-ref
+  "Fetches the git ref of `ref`, being a tag or ref name using the configured `git`."
+  [{:keys [git] :as config} ref]
+  (let [cmd [git "rev-parse" "--verify" ref]]
     (:out (apply sh cmd))))
 
 (defn git-ref-message
-  ""
+  "Fetches the message of the `ref-or-sha` from git-log, using the configured `git`."
   [{:keys [git] :as config} ref-or-sha]
   (let [cmd [git "log" "-1" ref-or-sha]]
     (:out (apply sh cmd))))
 
 (defn git-ref-ts
-  ""
+  "Fetches the timestamp of the `ref-or-sha` from git-log, using the configured `git`."
   [{:keys [git] :as config} ref-or-sha]
   (let [cmd [git "log" "-1" "--pretty=%ct" ref-or-sha]]
     (str/trim (:out (apply sh cmd)))))
 
 (defmacro let-groups
-  "Let for binding groups out of a j.u.Pattern j.u.r.Matcher."
-  {:style/indent [2]}
-  [m bindings & body]
+  "Let for binding groups out of a j.u.r.Pattern j.u.r.Matcher."
+  {:style/indent [1]}
+  [[bindings m] & body]
   (let [s (with-meta (gensym "matcher") {:tag java.util.regex.Matcher})]
     `(let [~s ~m
            ~@(mapcat identity
@@ -40,12 +40,25 @@
                        `[~b (.group ~s ~(name b))]))]
        ~@body)))
 
-(defn ensure-pattern [x]
-  (if (string? x)
-    (re-pattern x)
-    x))
+(defn ensure-pattern
+  "Given a string, compiles it to a j.u.Pattern."
+  [x]
+  (cond (string? x)
+        (re-pattern x)
 
-(defn parse-git-describe
+        (instance? java.util.regex.Pattern x)
+        x
+
+        :else
+        (throw (IllegalArgumentException. "ensure-pattern requires a string or a j.u.r.Pattern!"))))
+
+(defn- parse-git-describe
+  "Implementation detail.
+
+  Used to parse the output of git-describe, using the configured `describe-pattern`.
+
+  Returns a map `{:tag, :ahead, :ahead?, :ref, :ref-short, :dirty?}`
+  if the pattern matches, otherwise returns the empty map."
   [{:keys [describe-pattern] :as config} out]
   (let [pattern (ensure-pattern describe-pattern)
         matcher (re-matcher pattern out)]
@@ -56,16 +69,21 @@
                     (pr-str out) pattern)
             (.flush *out*))
           {})
-      (let-groups matcher [tag ahead ref dirty]
-                  {:tag       tag
-                   :ahead     (Integer/parseInt ahead)
-                   :ahead?    (not= ahead "0")
-                   :ref       (get-git-ref config)
-                   :ref-short ref
-                   :dirty?    (not= "" dirty)}))))
+      (let-groups [[tag ahead ref dirty] matcher]
+        {:tag       tag
+         :ahead     (Integer/parseInt ahead)
+         :ahead?    (not= ahead "0")
+         :ref       (git-ref config "HEAD")
+         :ref-short ref
+         :dirty?    (not= "" dirty)}))))
 
 (defn git-describe
-  ""
+  "Uses git-describe to parse the status of the repository.
+
+  Using the configured `git` and `describe-pattern` to parse the output.
+
+  Returns a map `{:tag, :ahead, :ahead?, :ref, :ref-short, :dirty?}`
+  if the pattern matches, otherwise returns the empty map."
   [{:keys [git] :as config}]
   (let [{:keys [exit out] :as child} (apply sh [git "describe" "--tags" "--dirty" "--long"])]
     (if-not (= exit 0)
@@ -77,7 +95,9 @@
       (parse-git-describe config (str/trim out)))))
 
 (defn git-status
-  "Fetch the current git status."
+  "Fetch the current git status, augmenting `#'git-describe`'s output
+  with the message and timestamp of the last commit, if the repository
+  isn't dirty."
   [config]
   (if-let [{:keys [dirty?] :as status} (git-describe config)]
     (cond->  status
