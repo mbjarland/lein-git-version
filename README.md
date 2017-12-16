@@ -44,7 +44,8 @@ meaningful identifier.
 Add:
 
     ;; Add in the git-version plugin
-    :plugins [[me.arrdem/lein-git-version "0.1.0-SNAPSHOT"]]
+    :plugins [[me.arrdem/lein-git-version "2.0.3"]
+              ...]
 
 By default, my incarnation of lein-git-version doesn't do anything to
 your project, except make some additional keys visible in the project
@@ -67,11 +68,13 @@ of the project to instead reflect the ref or short ref.
 For instance,
 
     (defproject bar :project/ref
+      :plugins [[me.arrdem/lein-git-version "2.0.3"]]
       ...)
 
 or
 
     (defproject baz :project/ref-short
+      :plugins [[me.arrdem/lein-git-version "2.0.3"]]
       ...)
 
 lein-git-version can also be used to compute a versions string, as an
@@ -83,15 +86,16 @@ For instance, lein-git-version an earlier version of itself uses
 itself to compute its own version.
 
     (defproject me.arrdem/lein-git-version "_"
+      :plugins [[me.arrdem/lein-git-version "2.0.3"]]
+
       :git-version {:status-to-version
         (fn [{:keys [tag version ahead ahead? dirty?] :as git}]
-                  (if (and tag (not ahead?) (not dirty?))
-                    tag
-                    (str tag
-                         (when ahead? (str "." ahead))
-                         (when dirty? "-SNAPSHOT"))))
+           (if (and tag (not ahead?) (not dirty?))
+              tag
+              (str tag
+                   (when ahead? (str "." ahead))
+                   (when dirty? "-SNAPSHOT"))))
       }
-      :plugins [[me.arrdem/lein-git-version "0.1.0-SNAPSHOT"]]}}
       ...)
 
 will compute a version string containing the last tag, the number of
@@ -110,9 +114,10 @@ root of the project.
 For instance,
 
     (defproject com.my-app/cares-what-version-it-is :project/ref-short
-       ...
-       :git-version {:version-file "resources/com/my_app/version.edn"
-                     :version-file-keys [:ref :version :timestamp]}))
+      :plugins [[me.arrdem/lein-git-version "2.0.3"]]
+      ...
+      :git-version {:version-file "resources/com/my_app/version.edn"
+                    :version-file-keys [:ref :version :timestamp]}))
 
 will cause lein-git-version to make the specified directory, and lay
 down an EDN file containing all the selected project status
