@@ -80,7 +80,7 @@ arbitrary function of the current git status by specifying a
 For instance,
 
     (defproject quxx "this will be replaced"
-      :git-version {:stats-to-version 
+      :git-version {:status-to-version 
 	    (fn [{:keys [tag ahead ahead? dirty?]}]
 		  (str tag
 		       (when ahead (str "+" ahead))
