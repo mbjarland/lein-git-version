@@ -1,4 +1,4 @@
-(defproject me.arrdem/lein-git-version "0.1.0"
+(defproject me.arrdem/lein-git-version "_"
   :description "Use git for project versions."
   :url "https://github.com/arrdem/lein-git-version"
   :license {:name "Eclipse Public License"
