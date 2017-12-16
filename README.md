@@ -16,7 +16,7 @@ version as the 3rd element of a `project.clj` file. For instance
 
 ```clojure
 (defproject foo "some-version"
-   ...)
+  ...)
 ```
 
 There are a couple problems with this.  First of all, until the
