@@ -1,4 +1,4 @@
-(defproject me.arrdem/lein-git-version "0.1.0-SNAPSHOT"
+(defproject me.arrdem/lein-git-version "0.1.0"
   :description "Use git for project versions."
   :url "https://github.com/arrdem/lein-git-version"
   :license {:name "Eclipse Public License"
@@ -7,5 +7,9 @@
   :eval-in-leiningen true
   :deploy-repositories [["releases" :clojars]]
 
-  :profiles {:dev {:dependencies [[midje "1.8.3"]]
-                   :plugins      [[lein-midje "3.2"]]}})
+  :plugins [[me.arrdem/lein-git-version "LATEST"]]
+  :git-version {:status-to-version
+                (fn [{:keys [tag version ahead ahead? dirty?]}]
+                  (if (and tag (not ahead?))
+                    tag
+                    (str tag "-" ahead (when dirty? "-SNAPSHOT"))))})
