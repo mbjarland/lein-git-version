@@ -4,57 +4,45 @@
             [clojure.java.shell :refer [sh]]))
 
 (def default-config
-  {:version-cmd    "git describe --match v*.* --abbrev=4 --dirty=**DIRTY**"
-   :ref-cmd        "git rev-parse --verify HEAD"
-   :msg-cmd        "git log -1 HEAD"
-   :ts-cmd         "git log -1 --pretty=%ct"
-   :root-ns        nil
-   :assoc-in-keys  [[:version]]
-   :filename       "version.clj"
-   :tag-to-version #(apply str (rest %))})
+  {:git            "git"
+   :tag-to-version identity})
 
-(defn get-git-version
-  ""
-  [{:keys [version-cmd tag-to-version] :as config}]
-  (let [cmd (str/split version-cmd #" ")]
-    (tag-to-version (str/trim (:out (apply sh cmd))))))
+(def git-dirty-pattern
+  #"(?<tag>.*)-(?<ahead>\d+)-g(?<ref>[0-9a-f]*)(?<snapshot>(-dirty)?)")
 
 (defn get-git-ref
   ""
-  [{:keys [ref-cmd] :as config}]
-  (let [cmd (str/split ref-cmd #" ")]
-    (apply str (str/trim (:out (apply sh cmd))))))
+  [{:keys [git] :as config}]
+  (let [cmd [git "rev-parse" "--verify" "HEAD"]]
+    (:out (apply sh cmd))))
 
-(comment
-  (get-git-ref {:git-version-cmd "git rev-parse"})
-  (get-git-ref {}))
-
-(defn get-git-last-message
+(defn git-ref-message
   ""
-  [{:keys [msg-cmd] :as config}]
-  (let [cmd (str/split msg-cmd #" ")]
-    (str/replace (apply str (str/trim
-                             (:out (apply sh cmd))))
-                 #"\"" "'")))
+  [{:keys [git] :as config} ref-or-sha]
+  (let [cmd [git "log" "-1" ref-or-sha]]
+    (:out (apply sh cmd))))
 
-(comment
-  (get-git-last-message {}))
-
-(defn get-git-ts
+(defn git-ref-ts
   ""
-  [{:keys [ts-cmd] :as config}]
-  (let [cmd (str/split ts-cmd #" ")]
-    (apply str (str/trim (:out (apply sh cmd))))))
+  [{:keys [git] :as config} ref-or-sha]
+  (let [cmd [git "log" "-1" "--pretty=%ct" ref-or-sha]]
+    (str/trim (:out (apply sh cmd)))))
 
-(comment
-  (get-git-ts {}))
+(defn git-status
+  "Fetch the current git status."
+  [{:keys [tag-to-version git] :as config}]
+  (let [buff                       (:out (apply sh [git "describe" "--tags" "--dirty" "--long"]))
+        _                          (println "debug]" (pr-str buff))
+        [_ tag ahead ref dirty? _] (re-find git-dirty-pattern buff)
+        dirty?                     (not= "" dirty?)]
+    (cond-> {:type      ::status
+             :tag       tag
+             :version   (tag-to-version tag)
+             :ahead     (Integer/parseInt ahead)
+             :ahead?    (not= ahead "0")
+             :ref       (get-git-ref config)
+             :ref-short ref}
+      dirty?       (assoc :dirty? true)
+      (not dirty?) (assoc :message (git-ref-message config "HEAD"))
+      (not dirty?) (assoc :timestamp (git-ref-ts config)))))
 
-(defn git-version
-  "Show project version, as tagged in git."
-  [project & args]
-  (let [config (merge default-config (:git-version project))]
-    (println "Version:" (:version project) "\n" (get-git-last-message config))))
-
-(comment
-  (get-git-version {:git-version {:version-cmd "git describe --abbrev=0"}})
-  (get-git-version {}))
