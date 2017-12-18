@@ -2,12 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/me.arrdem/lein-git-version.svg)](https://clojars.org/me.arrdem/lein-git-version)
 
-This repo is a fork and to my taste a massive cleanup of
-[cvillecsteele's
-lein-git-version](https://github.com/cvillecsteele/lein-git-version)
-which is itself an un-maintained alternative to
-[michalmarczyk's](https://github.com/michalmarczyk/lein-git-version)
-original project.
+Derive your Leiningen project version from your Git history.
 
 ## Motivation
 
@@ -15,32 +10,31 @@ Leiningen projects, in their heritage from Maven, list an explicit
 version as the 3rd element of a `project.clj` file. For instance
 
 ```clojure
-(defproject foo "some-version"
+(defproject foo "1.3.4"
   ...)
 ```
 
-There are a couple problems with this.  First of all, until the
+There are a couple of problems with this.  First of all, until the
 arrival of `leiningen.release/bump-version` for the `lein release`
 task, there was really no sane way to update the version of a property
-short of a sed script which just rewrote the `project.clj`.
+short of a sed script to rewrite the `project.clj`.
 
 While `bump-version` is a mostly acceptable solution, it still relies
-on the filesystem (or to be more specific a code repository)
-reflecting in a file under version control the logical identifier
-attached to some point in the history of the repository.
 
-The problem with sticking a version identifier in the filesystem is
-that it becomes a source of merge conflicts when multiple people are
-collaborating on an artifact, and it may be difficult to automate
-vesion management using merge hooks in workflows with automated
-commits that can be difficult to implement.
+on storing the version identifier in a file, attached to some
+point in the history of the repository.
 
-Moreover, in monorepo patterns ala
-[lein-modules](https://github.com/jcrossley3/lein-modules), versions
-for shared libraries which are distributed only as a component of
-artifacts in the repository are no longer particularly a meaningful
-construct. The commit ID or the version control label is the most
-meaningful identifier.
+The problem with sticking a version identifier in the filesystem/version
+history is that it becomes a source of merge conflicts. To avoid the
+merge conflicts, teams sometimes build complicated merge hooks or
+automated workflows. Now you have two problems.
+
+In monorepo patterns ala
+[lein-modules](https://github.com/jcrossley3/lein-modules), the problems
+above become amplified. Additionally, versions for inter-monorepo dependencies
+are not very meaningful as all dependencis are built from the same source
+commit, rather than depending on a specific Maven version identifier.
+Using a commit ID or version control tag/label is a more accurate and useful.
 
 ## Usage
 
@@ -90,7 +84,7 @@ arbitrary function of the current git status by specifying a
 `status-to-version` function of the above status structure in the
 `:git-version` map of your `project.clj`.
 
-For instance, lein-git-version an earlier version of itself uses
+For instance, lein-git-version uses an earlier version of
 itself to compute its own version.
 
 ```clojure
@@ -139,6 +133,15 @@ It's suggested that rather than target a directory under source
 control, a source control ignored eg `"gen-resources/..."` directory
 be used to isolate generated build artifacts from user
 sources. Remember to add the target to your project's `:resource-paths`!
+
+## History
+
+This repo is a fork and to my taste a massive cleanup of
+[cvillecsteele's
+lein-git-version](https://github.com/cvillecsteele/lein-git-version)
+which is itself an un-maintained alternative to
+[michalmarczyk's](https://github.com/michalmarczyk/lein-git-version)
+original project.
 
 ## License
 
