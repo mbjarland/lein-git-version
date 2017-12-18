@@ -20,6 +20,7 @@ task, there was really no sane way to update the version of a property
 short of a sed script to rewrite the `project.clj`.
 
 While `bump-version` is a mostly acceptable solution, it still relies
+
 on storing the version identifier in a file, attached to some
 point in the history of the repository.
 
