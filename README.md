@@ -31,8 +31,8 @@ attached to some point in the history of the repository.
 
 The problem with sticking a version identifier in the filesystem is
 that it becomes a source of merge conflicts when multiple people are
-collaborating on an artifact, it becomes a source of tooling
-difficulty with requiring merge hooks or workflows with automated
+collaborating on an artifact, and it may be difficult to automate
+vesion management using merge hooks in workflows with automated
 commits that can be difficult to implement.
 
 Moreover, in monorepo patterns ala
