@@ -6,11 +6,20 @@
 (def git-describe-pattern
   #"(?<tag>.*)-(?<ahead>\d+)-g(?<ref>[0-9a-f]*)(?<dirty>(-dirty)?)")
 
+(defn- do-cmd [cmd]
+  (str/trim (:out (apply sh cmd))))
+
+(defn git-branch
+  "Fetches the name of the current git branch using the configured `git`."
+  [{:keys [git] :as config}]
+  (let [cmd [git "rev-parse" "--abbrev-ref" "HEAD"]]
+    (do-cmd cmd)))
+
 (defn git-ref
   "Fetches the git ref of `ref`, being a tag or ref name using the configured `git`."
   [{:keys [git] :as config} ref]
   (let [cmd [git "rev-parse" "--verify" ref]]
-    (:out (apply sh cmd))))
+    (do-cmd cmd)))
 
 (defn git-ref-message
   "Fetches the message of the `ref-or-sha` from git-log, using the configured `git`."
@@ -22,7 +31,7 @@
   "Fetches the timestamp of the `ref-or-sha` from git-log, using the configured `git`."
   [{:keys [git] :as config} ref-or-sha]
   (let [cmd [git "log" "-1" "--pretty=%ct" ref-or-sha]]
-    (str/trim (:out (apply sh cmd)))))
+    (do-cmd cmd)))
 
 (defmacro let-groups
   "Let for binding groups out of a j.u.r.Pattern j.u.r.Matcher."

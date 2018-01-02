@@ -56,6 +56,7 @@ map.
  :ahead?    ;; Is the head ahead by more than 0 commits
  :ref       ;; The full current ref
  :ref-short ;; The "short" current ref
+ :branch    ;; The name of the current branch
  :dirty?    ;; Optional. Boolean. Are there un-committed changes.
  :message   ;; Optional. The last commit message when clean.
  :timestamp ;; Optional. The last commit date when clean.
@@ -91,20 +92,24 @@ itself to compute its own version.
 (defproject me.arrdem/lein-git-version "_"
   :plugins [[me.arrdem/lein-git-version "2.0.3"]]
 
-  :git-version {:status-to-version
-    (fn [{:keys [tag version ahead ahead? dirty?] :as git}]
-      (if (and tag (not ahead?) (not dirty?))
-        tag
-        (str tag
-             (when ahead? (str "." ahead))
-             (when dirty? "-SNAPSHOT"))))
+  :git-version
+    {:status-to-version
+       (fn [{:keys [tag version branch ahead ahead? dirty?] :as git}]
+          (assert (re-find #"\d+\.\d+\.\d+" tag)
+                  "Tag is assumed to be a raw SemVer version")
+          (if (and tag (not ahead?) (not dirty?))
+             tag
+             (let [[_ prefix patch] (re-find #"(\d+\.\d+)\.(\d+)" tag)
+                   patch            (Long/parseLong patch)
+                   patch+           (inc patch)]
+               (format "%s.%d-%s-SNAPSHOT" prefix patch+ branch))))
   }
   ...)
 ```
 
-will compute a version string containing the last tag, the number of
-commits ahead and the "-SNAPSHOT" suffix if the repo is dirty or it's
-ahead.
+Will use the last tag as the version if level with a tag, otherwise
+will produce a `SNAPSHOT` one SemVer patch ahead of the previous tag
+qualified with the name of the current branch.
 
 This enables your release workflow to consist simply of creating a tag
 and doing a deploy. No source changes are required.
@@ -137,8 +142,7 @@ sources. Remember to add the target to your project's `:resource-paths`!
 ## History
 
 This repo is a fork and to my taste a massive cleanup of
-[cvillecsteele's
-lein-git-version](https://github.com/cvillecsteele/lein-git-version)
+[cvillecsteele's lein-git-version](https://github.com/cvillecsteele/lein-git-version)
 which is itself an un-maintained alternative to
 [michalmarczyk's](https://github.com/michalmarczyk/lein-git-version)
 original project.

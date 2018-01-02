@@ -8,10 +8,16 @@
   :deploy-repositories [["releases" :clojars]]
 
   :plugins [[me.arrdem/lein-git-version "LATEST"]]
-  :git-version {:status-to-version
-                (fn [{:keys [tag version ahead ahead? dirty?] :as git}]
-                  (if (and tag (not ahead?) (not dirty?))
-                    tag
-                    (str tag
-                         (when ahead? (str "." ahead))
-                         (when dirty? "-SNAPSHOT"))))})
+  :git-version
+  ,,{:status-to-version
+     ,,(fn [{:keys [tag version branch ahead ahead? dirty?] :as git}]
+         (assert (re-find #"\d+\.\d+\.\d+" tag)
+                 "Tag is assumed to be a raw SemVer version")
+         (if (and tag (not ahead?) (not dirty?))
+           tag
+           (let [[_ prefix patch] (re-find #"(\d+\.\d+)\.(\d+)" tag)
+                 patch            (Long/parseLong patch)
+                 patch+           (inc patch)]
+             (format "%s.%d-%s-SNAPSHOT" prefix patch+ branch))))
+     }
+  )

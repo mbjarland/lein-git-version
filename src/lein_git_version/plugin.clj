@@ -1,7 +1,7 @@
 (ns lein-git-version.plugin
   "The lein-git-version plugin as loaded by lein itself."
   (:require [clojure.java.io :as io]
-            [leiningen.git-version :refer [git-status git-describe-pattern]]))
+            [leiningen.git-version :refer [git-status git-describe-pattern git-branch]]))
 
 (def default-config
   "The default configuration values."
@@ -46,11 +46,15 @@
   (let [{:keys [version-file file-keys status-to-version] :as config}
         ,,(merge default-config git-version)
 
+        branch (git-branch config)
+        
         {:keys [tag version ahead ahead? ref ref-short] :as status}
         ,,(git-status config)
 
         status
-        ,,(dissoc status :version)
+        ,,(-> status
+              (dissoc :version)
+              (assoc :branch branch))
 
         status-to-version
         ,,(when status-to-version
