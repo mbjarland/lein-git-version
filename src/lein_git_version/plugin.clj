@@ -1,12 +1,12 @@
 (ns lein-git-version.plugin
   "The lein-git-version plugin as loaded by lein itself."
   (:require [clojure.java.io :as io]
-            [leiningen.git-version :refer [git-status git-describe-pattern git-branch]]))
+            [cuddlefish.core :as git]))
 
 (def default-config
   "The default configuration values."
   {:git               "git"
-   :describe-pattern  git-describe-pattern
+   :describe-pattern  git/git-describe-pattern
    :tag-to-version    nil
    :version-file      nil
    :version-file-keys [:ref :ref-short :tag :ahead :ahead? :dirty? :message :timestamp :version]})
@@ -46,10 +46,10 @@
   (let [{:keys [version-file file-keys status-to-version] :as config}
         ,,(merge default-config git-version)
 
-        branch (git-branch config)
+        branch (git/current-branch config)
         
         {:keys [tag version ahead ahead? ref ref-short] :as status}
-        ,,(git-status config)
+        ,,(git/status config)
 
         status
         ,,(-> status

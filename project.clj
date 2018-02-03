@@ -5,6 +5,7 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
 
   :eval-in-leiningen true
+  :dependencies [[me.arrdem/cuddlefish "0.1.0"]]
   :deploy-repositories [["releases" :clojars]]
 
   :plugins [[me.arrdem/lein-git-version "LATEST"]]
