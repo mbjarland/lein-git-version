@@ -20,7 +20,6 @@ task, there was really no sane way to update the version of a property
 short of a sed script to rewrite the `project.clj`.
 
 While `bump-version` is a mostly acceptable solution, it still relies
-
 on storing the version identifier in a file, attached to some
 point in the history of the repository.
 
@@ -149,8 +148,10 @@ original project.
 
 ## License
 
-Copyright © 2017 Reid McKenzie
+Copyright © 2017 Reid "arrdem" McKenzie
 
 Derived from lein-git-version © 2016 Colin Steele
+
+Derived from lein-git-version © 2011 Michał Marczyk
 
 Distributed under the Eclipse Public License, the same as Clojure.
