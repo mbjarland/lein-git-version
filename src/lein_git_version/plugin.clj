@@ -1,6 +1,7 @@
 (ns lein-git-version.plugin
   "The lein-git-version plugin as loaded by lein itself."
   (:require [clojure.java.io :as io]
+            [clojure.java.shell :refer [with-sh-dir]]
             [cuddlefish.core :as git]))
 
 (def default-config
@@ -43,37 +44,38 @@
   [{:keys           [git-version name root]
     project-version :version
     :as             project}]
-  (let [{:keys [version-file file-keys status-to-version] :as config}
-        ,,(merge default-config git-version)
+  (with-sh-dir root
+    (let [{:keys [version-file file-keys status-to-version] :as config}
+    ,,(merge default-config git-version)
 
-        branch (git/current-branch config)
-        
-        {:keys [tag version ahead ahead? ref ref-short] :as status}
-        ,,(git/status config)
+          branch (git/current-branch config)
 
-        status
-        ,,(-> status
-              (dissoc :version)
-              (assoc :branch branch))
+          {:keys [tag version ahead ahead? ref ref-short] :as status}
+          ,,(git/status config)
 
-        status-to-version
-        ,,(when status-to-version
-            (try (eval status-to-version)
-                 (catch Exception e
-                   (binding [*out* *err*]
-                     (printf (str "While trying to evaluate status-to-version function:\n%s\n\n"
-                                  "Encountered exception:\n%s\n")
-                             status-to-version e))
-                   (System/exit 1))))]
-    (cond-> (merge project status)
-      (= project-version :project/git-ref-short)
-      ,,(assoc :version ref-short)
+          status
+          ,,(-> status
+                (dissoc :version)
+                (assoc :branch branch))
 
-      (= project-version :project/git-ref)
-      ,,(assoc :version ref)
+          status-to-version
+          ,,(when status-to-version
+              (try (eval status-to-version)
+                   (catch Exception e
+                     (binding [*out* *err*]
+                       (printf (str "While trying to evaluate status-to-version function:\n%s\n\n"
+                                    "Encountered exception:\n%s\n")
+                               status-to-version e))
+                     (System/exit 1))))]
+      (cond-> (merge project status)
+              (= project-version :project/git-ref-short)
+              ,,(assoc :version ref-short)
 
-      status-to-version
-      ,,(assoc :version (status-to-version status))
+              (= project-version :project/git-ref)
+              ,,(assoc :version ref)
 
-      version-file
-      ,,(write-version-file version-file file-keys))))
+              status-to-version
+              ,,(assoc :version (status-to-version status))
+
+              version-file
+              ,,(write-version-file version-file file-keys)))))
