@@ -18,7 +18,7 @@
     (io/make-parents f)
     (with-open [writer (io/writer f)]
       (binding [*out* writer]
-        (prn (select-keys project)))))
+        (prn (select-keys project keys)))))
 
   ;; Don't transform the project so as to fit in the cond-> pipeline
   project)
