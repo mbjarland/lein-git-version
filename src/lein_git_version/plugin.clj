@@ -45,7 +45,7 @@
     project-version :version
     :as             project}]
   (with-sh-dir root
-    (let [{:keys [version-file file-keys status-to-version] :as config}
+    (let [{:keys [version-file version-file-keys status-to-version] :as config}
     ,,(merge default-config git-version)
 
           branch (git/current-branch config)
@@ -78,4 +78,4 @@
               ,,(assoc :version (status-to-version status))
 
               version-file
-              ,,(write-version-file version-file file-keys)))))
+              ,,(write-version-file version-file version-file-keys)))))
