@@ -61,21 +61,21 @@ map.
  :timestamp ;; Optional. The last commit date when clean.
 }
 ```
-If the keyword `:project/ref` or `:project/ref-short` is used in place
+If the keyword `:project/git-ref` or `:project/git-ref-short` is used in place
 of a version string, lein-git-version will update the version string
 of the project to instead reflect the ref or short ref.
 
 For instance,
 
 ```clojure
-(defproject bar :project/ref
+(defproject bar :project/git-ref
   :plugins [[me.arrdem/lein-git-version "2.0.3"]]
   ...)
 ```
 or
 
 ```clojure
-(defproject baz :project/ref-short
+(defproject baz :project/git-ref-short
   :plugins [[me.arrdem/lein-git-version "2.0.3"]]
   ...)
 ```
