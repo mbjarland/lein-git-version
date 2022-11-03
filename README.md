@@ -41,7 +41,7 @@ Add:
 
 ```clojure
 ;; Add in the git-version plugin
-:plugins [[me.arrdem/lein-git-version "2.0.3"]
+:plugins [[me.arrdem/lein-git-version "2.0.8"]
           ...]
 ```
 
